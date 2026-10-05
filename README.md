@@ -12,7 +12,6 @@ Tools: GitHub, VS Code, MySQL Workbench, Excel
 ## Projects
 - **[Sephora Beauty Dupe Finder](link)**: Finds lower cost dupes across 8,000+ Sephora products by comparing ingredients.
   
-- ## Projects
 - [**BRFSS Health Outcomes Analysis**](https://github.com/sharonwu02/sharonwu02/blob/main/brfss_analysis.py) — Used 2024 CDC BRFSS survey data to predict diabetes, hypertension, and cholesterol from socioeconomic factors (income, education, employment, insurance). Built KNN from scratch, compared it against logistic regression, and created an interactive Altair dashboard. *Python, pandas, scikit-learn, Altair
 
 ## Contact
