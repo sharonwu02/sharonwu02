@@ -1,16 +1,20 @@
-## Hi there 👋
+# Hi, I'm Sharon 👋
 
-<!--
-**sharonwu02/sharonwu02** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+I'm a second-year at Northeastern University studying Data Science and Business Administration. I'm originally from Los Angeles, California.
 
-Here are some ideas to get you started:
+I'm interested in using data to solve real problems, from finding better product matches to predicting health outcomes. I'm looking for a data science or data analytics co-op for January to June 2027.
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## Languages and tools
+I'm most comfortable in **Python** (Pandas, NumPy, scikit-learn, Matplotlib, Seaborn) and dabble a little in **SQL**.
+I've also worked with Next.js and CSS on the NU Science Magazine web team.
+Tools: GitHub, VS Code, MySQL Workbench, Excel
+
+## Projects
+- **[Sephora Beauty Dupe Finder](link)**: Finds lower cost dupes across 8,000+ Sephora products by comparing ingredients.
+  
+- ## Projects
+- [**BRFSS Health Outcomes Analysis**](https://github.com/sharonwu02/sharonwu02/blob/main/brfss_analysis.py) — Used 2024 CDC BRFSS survey data to predict diabetes, hypertension, and cholesterol from socioeconomic factors (income, education, employment, insurance). Built KNN from scratch, compared it against logistic regression, and created an interactive Altair dashboard. *Python, pandas, scikit-learn, Altair
+
+## Contact
+- LinkedIn: https://www.linkedin.com/in/sharon-wu-251bb238a/
+- Email: sharonwu02@gmail.com
