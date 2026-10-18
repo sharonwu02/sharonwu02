@@ -1,0 +1,128 @@
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+df = pd.read_csv('product_info.csv')
+
+# Drop rows with missing ingredients or price
+df = df.dropna(subset=['ingredients', 'price_usd'])
+
+# Keep only relevant columns
+df = df[['product_name', 'brand_name', 'primary_category', 'secondary_category',
+         'tertiary_category', 'price_usd', 'size', 'rating', 'ingredients']].reset_index(drop=True)
+
+# Most specific category available (e.g. "Moisturizers" instead of "Skincare")
+df['category'] = df['tertiary_category'].fillna(df['secondary_category']).fillna(df['primary_category'])
+
+# Split the ingredient list on commas so each whole ingredient is one token
+# ("Mineral Oil" instead of "mineral" + "oil")
+def split_ingredients(text):
+    for ch in "[]'":
+        text = text.replace(ch, ',')
+    return [x.strip().strip('.').lower() for x in text.split(',') if x.strip().strip('.')]
+
+tfidf = TfidfVectorizer(tokenizer=split_ingredients, lowercase=False, token_pattern=None)
+tfidf_matrix = tfidf.fit_transform(df['ingredients'])
+
+RESULT_COLUMNS = ['product_name', 'brand_name', 'price_usd', 'size', 'rating', 'similarity']
+
+def dupes_for_index(idx, max_price=None, top_n=5, scores=None):
+    if scores is None:
+        scores = cosine_similarity(tfidf_matrix[idx], tfidf_matrix).flatten()
+
+    results = df.copy()
+    results['similarity'] = scores
+
+    # Filter: same specific category, cheaper, different brand
+    results = results[results['category'] == df.loc[idx, 'category']]
+    results = results[results['price_usd'] < df.loc[idx, 'price_usd']]
+    results = results[results['brand_name'] != df.loc[idx, 'brand_name']]
+    results = results[results['similarity'] > 0]
+
+    # Optional max price cap
+    if max_price:
+        results = results[results['price_usd'] <= max_price]
+
+    return results.sort_values('similarity', ascending=False).head(top_n)
+
+def pick_product(product_name):
+    exact = df[df['product_name'].str.lower() == product_name.lower()]
+    if not exact.empty:
+        return exact.index[0]
+
+    matches = df[df['product_name'].str.contains(product_name, case=False, regex=False, na=False)
+                 | df['brand_name'].str.contains(product_name, case=False, regex=False, na=False)]
+    if matches.empty:
+        return None
+    if len(matches) == 1:
+        return matches.index[0]
+
+    matches = matches.head(20)
+    for n, (_, row) in enumerate(matches.iterrows(), 1):
+        print(f"  {n}. {row['product_name']} ({row['brand_name']}) — ${row['price_usd']}")
+    choice = input("Pick a number: ").strip()
+    if not choice.isdigit() or not 1 <= int(choice) <= len(matches):
+        return None
+    return matches.index[int(choice) - 1]
+
+def find_dupes(idx, max_price=None, top_n=5):
+    print(f"\nOriginal: {df.loc[idx, 'product_name']} ({df.loc[idx, 'brand_name']}) — ${df.loc[idx, 'price_usd']}")
+    print(f"Category: {df.loc[idx, 'category']}\n")
+    return dupes_for_index(idx, max_price, top_n)[RESULT_COLUMNS]
+
+def export_all_dupes(min_price=100, top_n=3, filename='dupes_over_100.csv'):
+    expensive = df[df['price_usd'] > min_price].index
+    all_scores = cosine_similarity(tfidf_matrix[expensive], tfidf_matrix)
+
+    rows = []
+    for idx, scores in zip(expensive, all_scores):
+        for rank, (_, dupe) in enumerate(dupes_for_index(idx, top_n=top_n, scores=scores).iterrows(), 1):
+            rows.append({
+                'original': df.loc[idx, 'product_name'],
+                'original_brand': df.loc[idx, 'brand_name'],
+                'original_price': df.loc[idx, 'price_usd'],
+                'category': df.loc[idx, 'category'],
+                'rank': rank,
+                'dupe': dupe['product_name'],
+                'dupe_brand': dupe['brand_name'],
+                'dupe_price': dupe['price_usd'],
+                'savings': df.loc[idx, 'price_usd'] - dupe['price_usd'],
+                'dupe_rating': dupe['rating'],
+                'similarity': round(dupe['similarity'], 3),
+            })
+
+    out = pd.DataFrame(rows)
+    out.to_csv(filename, index=False)
+    print(f"Saved dupes for {out['original'].nunique()} of {len(expensive)} products over ${min_price} to {filename}")
+
+pd.set_option('display.width', 200)
+pd.set_option('display.max_colwidth', 45)
+
+while True:
+    name = input("\nProduct name, 'all' to export dupes for everything over $100, or 'q' to quit: ").strip()
+    if name.lower() in ('q', 'quit', 'exit'):
+        break
+    if not name:
+        continue
+    if name.lower() == 'all':
+        export_all_dupes()
+        continue
+
+    idx = pick_product(name)
+    if idx is None:
+        print("Product not found.")
+        continue
+
+    price = input("Max price (press Enter to skip): ").strip()
+    try:
+        max_price = float(price) if price else None
+    except ValueError:
+        print("Not a number, ignoring max price.")
+        max_price = None
+
+    result = find_dupes(idx, max_price=max_price)
+    if result.empty:
+        print("No cheaper dupes found.")
+    else:
+        print(result.to_string(index=False))
